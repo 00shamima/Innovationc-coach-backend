@@ -16,7 +16,9 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin: ["http://localhost:5173", "http://localhost:5174",
+      "https://00shamima.github.io"
+    ],
     credentials: true
   }
 });
@@ -30,7 +32,7 @@ if (!fs.existsSync(uploadsPath)) {
 
 app.use(cors({
   origin: function (origin, callback) {
-    const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174'];
+    const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174',"https://00shamima.github.io"];
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
