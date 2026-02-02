@@ -1,0 +1,92 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
+const passport = require('passport');
+const session = require('express-session');
+const http = require('http'); 
+const { Server } = require('socket.io'); 
+const messageRoutes = require('./routes/message.routes');
+
+require('./config/passport'); 
+
+const app = express();
+const server = http.createServer(app); 
+
+const io = new Server(server, {
+  cors: {
+    origin: ['http://localhost:5173', 'http://localhost:5174'],
+    credentials: true
+  }
+});
+
+const uploadsPath = path.resolve(__dirname, '../uploads');
+if (!fs.existsSync(uploadsPath)) {
+    fs.mkdirSync(uploadsPath, { recursive: true });
+}
+
+app.use(cors({
+  origin: function (origin, callback) {
+    const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174'];
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
+app.use(express.json());
+
+app.use(session({
+  secret: process.env.JWT_SECRET || 'innovation_coach_secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false } 
+}));
+
+app.use(passport.initialize()); 
+app.use(passport.session()); 
+
+app.use('/uploads', express.static(uploadsPath, {
+  setHeaders: (res) => {
+    res.set('Access-Control-Allow-Origin', '*'); 
+  }
+}));
+
+app.use('/api/auth', require('./routes/auth.routes'));
+app.use('/api/admin', require('./routes/admin.routes'));
+app.use('/api/posts', require('./routes/post.routes'));
+app.use('/api/likes', require('./routes/like.routes'));
+app.use('/api/users', require('./routes/user.routes'));
+app.use('/api/messages', messageRoutes);
+
+let onlineUsers = [];
+io.on("connection", (socket) => {
+  socket.on("addNewUser", (userId) => {
+    if (userId && !onlineUsers.some(u => u.userId === userId)) {
+      onlineUsers.push({ userId, socketId: socket.id });
+    }
+    io.emit("getOnlineUsers", onlineUsers);
+  });
+
+  socket.on("sendMessage", (message) => {
+    const user = onlineUsers.find(u => u.userId === message.receiverId);
+    if (user) {
+      io.to(user.socketId).emit("getMessage", message);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    onlineUsers = onlineUsers.filter(u => u.socketId !== socket.id);
+    io.emit("getOnlineUsers", onlineUsers);
+  });
+});
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(` Server running on http://localhost:${PORT}`);
+  console.log(` Static files served from: ${uploadsPath}`);
+});

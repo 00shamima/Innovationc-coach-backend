@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+  admin
+}
+
+enum PostStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  email       String    @unique
+  password    String?
+  role        Role      @default(USER)
+  posts       Post[]
+  likes       Like[]
+  bio         String?   @default("Innovator in progress...")
+  profilePic  String?
+  createdAt   DateTime? @default(now())
+  otp         String?   
+  otpExpiry   DateTime? 
+  isApproved  Boolean   @default(false)
+
+  // --- MESSAGING RELATIONS ---
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+}
+
+model Message {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  text        String
+  createdAt   DateTime @default(now())
+  read        Boolean  @default(false)
+
+  // Sender Relation
+  senderId    String   @db.ObjectId
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+
+  // Receiver Relation
+  receiverId  String   @db.ObjectId
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  @@index([senderId, receiverId])
+}
+
+model Post {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  content      String
+  
+  // Media Fields for Photos & Videos
+  mediaUrl     String?    // File path store panna
+  mediaType    String?    // 'image' or 'video' nu kandu pidikka
+  
+  status       PostStatus @default(PENDING)
+  isAdminRead  Boolean    @default(false)
+  isResponded  Boolean    @default(false)
+  
+  authorId     String     @db.ObjectId
+  author       User       @relation(fields: [authorId], references: [id])
+  likes        Like[]
+  createdAt    DateTime?  @default(now())
+}
+
+model Like {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  postId    String   @db.ObjectId
+  userId    String   @db.ObjectId
+  createdAt DateTime @default(now()) // Notification order-kaga
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, postId])
+}
+model Notification {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  recipientId String   @db.ObjectId
+  senderId    String   @db.ObjectId
+  type        String   // "LIKE"
+  message     String
+  postId      String?  @db.ObjectId
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
