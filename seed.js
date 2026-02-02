@@ -3,24 +3,36 @@ const bcrypt = require('bcrypt');
 const prisma = new PrismaClient();
 
 async function main() {
-  // Unga password-ah encrypt panrom (Security mukkiyam)
-  const hashedPassword = await bcrypt.hash('282868##vs', 10);
   
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminRawPassword = process.env.ADMIN_PASSWORD;
+
+  
+  if (!adminEmail || !adminRawPassword) {
+    console.error("Error: ADMIN_EMAIL and ADMIN_PASSWORD must be set in .env file");
+    process.exit(1);
+  }
+
+  console.log('Seeding admin user...');
+
+  // Password-ah encrypt panrom
+  const hashedPassword = await bcrypt.hash(adminRawPassword, 10);
+
   const admin = await prisma.user.upsert({
-    where: { email: 'shami28@gmail.com' },
+    where: { email: adminEmail },
     update: {
-      password: hashedPassword 
+      password: hashedPassword,
     },
     create: {
       name: 'Innovation Coach',
-      email: 'shami28@gmail.com',
+      email: adminEmail,
       password: hashedPassword,
       role: 'ADMIN',
     },
   });
 
   console.log('--- Database Seeded Successfully ---');
-  console.log('Email:', admin.email);
+  console.log('Admin Email:', admin.email);
   console.log('Role:', admin.role);
 }
 

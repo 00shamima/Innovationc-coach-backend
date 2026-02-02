@@ -1,3 +1,6 @@
 node_modules/
 .env
 uploads/
+# Prisma – ignore local databases only
+prisma/*.db
+prisma/*.db-journal
