@@ -16,15 +16,17 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:5173', 'http://localhost:5174'],
+    origin: ["http://localhost:5173", "http://localhost:5174"],
     credentials: true
   }
 });
+
 
 const uploadsPath = path.resolve(__dirname, '../uploads');
 if (!fs.existsSync(uploadsPath)) {
     fs.mkdirSync(uploadsPath, { recursive: true });
 }
+
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -39,12 +41,16 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use(session({
   secret: process.env.JWT_SECRET || 'innovation_coach_secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } 
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production', 
+    maxAge: 24 * 60 * 60 * 1000 
+  } 
 }));
 
 app.use(passport.initialize()); 
@@ -56,6 +62,11 @@ app.use('/uploads', express.static(uploadsPath, {
   }
 }));
 
+
+app.get('/', (req, res) => {
+  res.status(200).json({ message: "Innovation Coach Backend is Live!" });
+});
+
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/admin', require('./routes/admin.routes'));
 app.use('/api/posts', require('./routes/post.routes'));
@@ -65,6 +76,8 @@ app.use('/api/messages', messageRoutes);
 
 let onlineUsers = [];
 io.on("connection", (socket) => {
+  console.log("New Socket Connection:", socket.id);
+
   socket.on("addNewUser", (userId) => {
     if (userId && !onlineUsers.some(u => u.userId === userId)) {
       onlineUsers.push({ userId, socketId: socket.id });
@@ -85,8 +98,13 @@ io.on("connection", (socket) => {
   });
 });
 
+app.use((err, req, res, next) => {
+  console.error("Global Error:", err.message);
+  res.status(500).json({ error: "Internal Server Error", details: err.message });
+});
+
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(` Server running on http://localhost:${PORT}`);
-  console.log(` Static files served from: ${uploadsPath}`);
+  console.log(`Server running on port ${PORT}`);
+  console.log(` Serving uploads from: ${uploadsPath}`);
 });
