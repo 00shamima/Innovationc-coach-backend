@@ -1,6 +1,5 @@
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const multer = require('multer');
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -11,14 +10,9 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'innovation_coach_uploads',
-    allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'mp4'],
+    folder: 'innovation_coach_posts',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'gif', 'mp4'],
   },
 });
 
-const upload = multer({ 
-    storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 } 
-});
-
-module.exports = upload;
+module.exports = storage;
