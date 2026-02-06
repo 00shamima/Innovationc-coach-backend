@@ -1,6 +1,5 @@
 const prisma = require('../utils/prisma');
 
-
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await prisma.user.findMany({
@@ -9,7 +8,8 @@ exports.getAllUsers = async (req, res) => {
     });
     res.json(users);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching users" });
+    console.error("GET ALL USERS ERROR:", error);
+    res.status(500).json({ message: "Error fetching users", details: error.message });
   }
 };
 
@@ -28,14 +28,17 @@ exports.getPendingUsers = async (req, res) => {
 
 exports.approveUser = async (req, res) => {
   const { userId } = req.body;
+  if (!userId) return res.status(400).json({ message: "User ID is required" });
+
   try {
     await prisma.user.update({
-      where: { id: userId },
+      where: { id: userId }, 
       data: { isApproved: true }
     });
     res.json({ message: "User approved successfully!" });
   } catch (error) {
-    res.status(500).json({ message: "Approval failed" });
+    console.error("APPROVE ERROR:", error);
+    res.status(500).json({ message: "Approval failed. Check if ID is a valid ObjectId." });
   }
 };
 
@@ -43,7 +46,7 @@ exports.rejectUser = async (req, res) => {
   const { userId } = req.body;
   try {
     await prisma.user.update({
-      where: { id: userId },
+      where: { id: userId }, 
       data: { isApproved: false } 
     });
     res.json({ message: "User rejected/Access denied" });
@@ -52,19 +55,21 @@ exports.rejectUser = async (req, res) => {
   }
 };
 
-
 exports.hardDeleteUser = async (req, res) => {
   const { userId } = req.params;
   try {
     await prisma.user.delete({
-      where: { id: userId }
+      where: { 
+        id: userId,
+        NOT: { role: 'ADMIN' }
+      }
     });
-    res.json({ message: "User permanently deleted from database" });
+    res.json({ message: "User permanently deleted" });
   } catch (error) {
-    res.status(500).json({ message: "Permanent delete failed" });
+    console.error("DELETE ERROR:", error);
+    res.status(500).json({ message: "Permanent delete failed. Admin accounts cannot be deleted." });
   }
 };
-
 
 exports.respondToPost = async (req, res) => {
   const { postId, status } = req.body;

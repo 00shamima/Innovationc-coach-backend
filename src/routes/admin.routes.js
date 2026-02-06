@@ -2,14 +2,12 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../Controllers/admin.controller');
 const authMiddleware = require('../middleware/auth.middleware');
+const adminMiddleware = require('../middleware/admin.middleware');
 
-router.get('/users', authMiddleware, adminController.getAllUsers);
-router.get('/pending-users', authMiddleware, adminController.getPendingUsers);
-router.patch('/approve-user', authMiddleware, adminController.approveUser);
-router.patch('/reject-user', authMiddleware, adminController.rejectUser); // Soft Delete
-router.delete('/delete-user/:userId', authMiddleware, adminController.hardDeleteUser); // Hard Delete
+router.get('/users', authMiddleware, adminMiddleware, adminController.getAllUsers);
+router.get('/pending-users', authMiddleware, adminMiddleware, adminController.getPendingUsers);
+router.patch('/approve-user', authMiddleware, adminMiddleware, adminController.approveUser);
+router.patch('/reject-user', authMiddleware, adminMiddleware, adminController.rejectUser); 
+router.delete('/delete-user/:userId', authMiddleware, adminMiddleware, adminController.hardDeleteUser);
 
-router.patch('/respond-post', authMiddleware, adminController.respondToPost);
-router.patch('/mark-read', authMiddleware, adminController.markAsRead);
-
-module.exports = router;
+module.exports = router; 

@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const register = async (req, res) => {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body; 
     try {
         const existingUser = await prisma.user.findUnique({ where: { email } });
         if (existingUser) return res.status(400).json({ message: "Email already registered" });
@@ -26,7 +26,7 @@ const register = async (req, res) => {
                 name, 
                 email, 
                 password: hashedPassword, 
-                role: role || 'USER', 
+                role: 'USER', 
                 isApproved: false 
             }
         });
@@ -46,6 +46,7 @@ const login = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(401).json({ message: "Wrong password" });
 
+        // Approval check
         if (user.role === 'USER' && !user.isApproved) {
             return res.status(403).json({ message: "Pending approval", userName: user.name });
         }
@@ -78,7 +79,7 @@ const googleLogin = async (req, res) => {
                     email,
                     name,
                     password: tempPassword,
-                    role: 'USER',
+                    role: 'USER', 
                     isApproved: false 
                 },
             });

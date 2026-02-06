@@ -14,25 +14,27 @@ require('./config/passport');
 const app = express();
 const server = http.createServer(app); 
 
+const allowedOrigins = [
+  "http://localhost:5173", 
+  "http://localhost:5174",
+  "https://00shamima.github.io",
+  "https://innovationc-coach.onrender.com" 
+];
+
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:5174",
-      "https://00shamima.github.io"
-    ],
+    origin: allowedOrigins,
     credentials: true
   }
 });
-
 
 const uploadsPath = path.resolve(__dirname, '../uploads');
 if (!fs.existsSync(uploadsPath)) {
     fs.mkdirSync(uploadsPath, { recursive: true });
 }
 
-
 app.use(cors({
   origin: function (origin, callback) {
-    const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174',"https://00shamima.github.io"];
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -64,7 +66,6 @@ app.use('/uploads', express.static(uploadsPath, {
   }
 }));
 
-
 app.get('/', (req, res) => {
   res.status(200).json({ message: "Innovation Coach Backend is Live!" });
 });
@@ -78,8 +79,6 @@ app.use('/api/messages', messageRoutes);
 
 let onlineUsers = [];
 io.on("connection", (socket) => {
-  console.log("New Socket Connection:", socket.id);
-
   socket.on("addNewUser", (userId) => {
     if (userId && !onlineUsers.some(u => u.userId === userId)) {
       onlineUsers.push({ userId, socketId: socket.id });
@@ -101,12 +100,10 @@ io.on("connection", (socket) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error("Global Error:", err.message);
   res.status(500).json({ error: "Internal Server Error", details: err.message });
 });
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(` Serving uploads from: ${uploadsPath}`);
 });
