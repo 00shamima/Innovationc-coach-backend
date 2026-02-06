@@ -18,6 +18,7 @@ const allowedOrigins = [
   "http://localhost:5173", 
   "http://localhost:5174",
   "https://00shamima.github.io",
+  "https://00shamima.github.io/Innovation-coach-dashboard", 
   "https://innovationc-coach.onrender.com" 
 ];
 
@@ -52,7 +53,8 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: { 
-    secure: process.env.NODE_ENV === 'production', 
+    secure: true, 
+    sameSite: 'none', 
     maxAge: 24 * 60 * 60 * 1000 
   } 
 }));
